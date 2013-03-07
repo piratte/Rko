@@ -1,0 +1,240 @@
+set.seed(14061992)
+
+roky = 60
+casu = 1536
+
+#naplneni matic casama odevzdani v hodinach od zadani ulohy
+
+#nejdrive paralelka s 15 studenty bude zaznamenana v matici s nazvem mala
+
+pocetMale = 15
+mala = matrix(data = 0, nrow = roky, ncol = pocetMale, byrow = TRUE, dimnames = NULL)
+
+for(y in 1:roky)
+{
+  mala[y,1] = runif(1,min=0,max=casu)
+  for(x in 2:pocetMale)
+  {
+    mala[y,x] = runif(1,min=mala[y,x-1],max=casu)
+  }
+
+}
+
+#naplneni matice reprezentujici casy odevzdani 20ti clene paralelky
+
+pocetStredni = 20
+stredni = matrix(data = 0, nrow = roky, ncol = pocetStredni, byrow = TRUE, dimnames = NULL)
+
+for(y in 1:roky)
+{
+  stredni[y,1] = runif(1,min=0,max=casu)
+  for(x in 2:pocetStredni)
+  {
+    stredni[y,x] = runif(1,min=stredni[y,x-1],max=casu)
+  }
+
+}
+
+#naplneni matice reprezentujici casy odevzdani 25ti clene paralelky
+
+pocetVelke = 25
+velka = matrix(data = 0, nrow = roky, ncol = pocetVelke, byrow = TRUE, dimnames = NULL)
+
+for(y in 1:roky)
+{
+  velka[y,1] = runif(1,min=0,max=casu)
+  for(x in 2:pocetVelke)
+  {
+    velka[y,x] = runif(1,min=velka[y,x-1],max=casu)
+  }
+
+}
+
+#spocteni casu odevzdani dle zadani pro kazdou paralelku zvlast. Matice, v nichz si pamatuji casy opraveni jsou 
+#pojmenovane po maticich pro paralelky, ale na konci identifikatoru maji "O"
+
+CasyOprav=function(casyOdevzdani, casyVraceni, pocet)
+{
+
+  for(y in 1:roky)
+  {
+    casyVraceni[y,1] = casyOdevzdani[y,1] + rexp(1,1/lambda)
+    for(x in 2:pocet)
+    {
+      if(casyVraceni[y,x-1] < casyOdevzdani[y,x])
+      {
+	casyVraceni[y,x] = casyOdevzdani[y,x] + rexp(1,1/lambda)
+      }
+      else
+      {
+	casyVraceni[y,x] = casyVraceni[y,x-1] + rexp(1,1/lambda)
+      }
+    }
+  }
+  casyVraceni
+  
+}
+
+lambda = 48 #hodin
+
+malaO = matrix(data = 0, nrow = roky, ncol = pocetMale, byrow = TRUE, dimnames = NULL)
+stredniO = matrix(data = 0, nrow = roky, ncol = pocetStredni, byrow = TRUE, dimnames = NULL)
+velkaO = matrix(data = 0, nrow = roky, ncol = pocetVelke, byrow = TRUE, dimnames = NULL)
+
+
+malaO = CasyOprav(mala, malaO, pocetMale)
+stredniO = CasyOprav(stredni, stredniO, pocetStredni)
+velkaO = CasyOprav(velka, velkaO, pocetVelke)
+
+
+
+#---------------------------------------Ulohy 1. casti -------------------------------------
+
+
+# a)
+
+
+
+#vytvorim si vektor ukonceni opravovani pro jednotlive paralelky i pro
+cely rocnik pro snazsi manipulaci
+konce = c(velkaO[,pocetVelke], stredniO[,pocetStredni], malaO[,pocetMale])
+maximum = max(konce)
+
+
+mean(konce)
+
+#histogram pro znazorneni ukonceni dob opravovani pro cele rocniky s
+rozumnym delenim bins
+bins = seq(1550,3200,by=150)
+hist(konce, prob=T, ylim=c(0,0.0015), xlim=c(1550,3200), breaks=bins)
+curve(dnorm(x,mean=mean(konce),sd=sd(konce)),add=TRUE,col="green", )
+
+plot(density(konce), xlim=c(1500,3250), ylim=c(0,0.0015) )
+curve(dnorm(x,mean=mean(konce),sd=sd(konce)),add=TRUE,col="green")
+
+
+
+#b)
+
+
+
+danaPrst = 0.9
+# pro kazdou paralelku pocitam nejdrive ocekavanou hodnotu casu vraceni opravenych ukolu, ktere si pak vypisu...
+stredVelk = mean(velkaO[,pocetVelke])
+stredVelk
+
+# ... a nasledne pocitam cas, kdy budou jiz vsechny ulohy opraveny s danou pravdepodobnosti
+quantile(velkaO, danaPrst)
+
+#to same pro stredni paralelku
+stredStred = mean(stredniO[,pocetStredni])
+stredStred
+quantile(stredniO, danaPrst)
+
+#i malou paralelku
+stredMal = mean(malaO[,pocetMale])
+stredMal
+quantile(malaO, danaPrst)
+
+
+
+#c)
+
+
+#do promenne si ulozim hranici ze zadani, na ktere budeme zkoumat, zdali jsou jiz vsechny ulohy opravene
+#v mem pripade je to deadline pro odevzdani + 30 dnu navic (v hodinach)
+hranice = casu+ 30*24
+
+#dale vydelim pocet praci opravenych po zadane hranici celkovym poctem a dostanu odpoved na zadani 
+sum(malaO > hranice) / (roky * pocetMale)
+sum(stredniO > hranice) / (roky * pocetStredni)
+sum(velkaO > hranice) / (roky * pocetVelke) 
+
+
+#d)
+
+
+
+assd
+
+
+
+#e)
+
+
+
+# do promenne last si ulozim casovou hranici, ktera odpovida pulnoci predposledniho dne
+last = casu - 24
+
+#dale spocitam, kolik studentu odevzdalo ulohu posledni den za celou historii predmetu. Vysledek ulozim do promenne celkLast...
+celkLast = sum(mala > last) + sum(stredni > last) + sum(velka > last)
+celkLast
+
+#...ktery nyni vydelim celkovym poctem studentu (vynasobim 100) a tim zjistim procento tech, kteri odevzdali behem posledniho dne
+(celkLast * 100) / ((pocetMale + pocetStredni + pocetVelke) * 60)
+
+
+
+#---------------------------------------Ulohy 2. casti -------------------------------------
+
+
+pocetCelkem = pocetMale + pocetStredni + pocetVelke
+
+#volim kratsi, ale vypocetne narocnejsi programatorske reseni
+#vytvorim si matici se spravnymi mirami
+rocniky = matrix(data = 0, nrow = roky, ncol = pocetCelkem, byrow = TRUE, dimnames = NULL)
+
+#kazdy radek odpovida rocniku, takze do nej vlozim hodnoty casu odevzdani a setridim je. Predpokladam, ze casy odevzdani jsou stejne
+for(y in 1:roky)
+{
+  rocniky[y,] = sort( c(mala[y,],stredni[y,],velka[y,]) )
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#--------------------TESTY-----------TESTY-----------------DANGER-------------------TESTY
+
+#bins=seq(0,casu+500,by=24)
+#hist(velka, breaks=bins)
+#hist(velkaO, breaks=bins)
+
+
+sort(c( mala[12,],stredni[12,],velka[12,] ))
+rocniky[12,]
+plot(rocniky[5,])
+plot(rocniky2[5,], add=TRUE, col="green")
+rocniky2 == rocniky
+
+mean(malaO-mala)/24
+mean(stredniO-stredni)/24
+mean(velkaO-velka)/24
+
+print(malaO)/24
+
+
+for(y in 1:roky)
+{
+  print(mean(I(mala[y,]>1512)))
+}
